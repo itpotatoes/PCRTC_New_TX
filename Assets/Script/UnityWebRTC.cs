@@ -249,66 +249,21 @@ public class UnityWebRTC : MonoBehaviour
                 }
             }
             
-            List<int> zeroIndices = new List<int>();
-
-            long unixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
             List<byte> data = new List<byte>();
-            
-            
+
             for (int i = 0; i < num; i++)
             {
-                if (vertices[i].x == 0 && vertices[i].y == 0 && vertices[i].z == 0 &&
-                    colors[i].r == 0 && colors[i].g == 0 && colors[i].b == 0)
-                {
-                    zeroIndices.Add(i);
-                }
-                else
-                {
-                    data.AddRange(BitConverter.GetBytes(vertices[i].x));
-                    data.AddRange(BitConverter.GetBytes(vertices[i].y));
-                    data.AddRange(BitConverter.GetBytes(vertices[i].z));
-                    data.Add(colors[i].r);
-                    data.Add(colors[i].g);
-                    data.Add(colors[i].b);
-                    data.Add(colors[i].a);
-                }
+                data.AddRange(BitConverter.GetBytes(vertices[i].x));
+                data.AddRange(BitConverter.GetBytes(vertices[i].y));
+                data.AddRange(BitConverter.GetBytes(vertices[i].z));
+                data.AddRange(new byte[] { colors[i].r, colors[i].g, colors[i].b, colors[i].a });
+                
             }
-
-            int zeroIndicesCount = zeroIndices.Count;
-            Debug.Log(zeroIndices);
-            data.AddRange(BitConverter.GetBytes(zeroIndicesCount));
-
-            foreach (int index in zeroIndices)
-            {
-                data.AddRange(BitConverter.GetBytes(index));
-            }
-
-            data.AddRange(BitConverter.GetBytes(unixTimestamp));
-            
-            
-            
-            /*  string directoryPath = @"D:\Loss\Comp_New";
-              string filename = $"TX_{unixTimestamp}.dat";
-              string fullPath = Path.Combine(directoryPath, filename);
-  
-            */
-            
-          //byte[] compressedData = CompressData(data);
-          byte[] compressedData2 = CompressData2(data);
-           
-           //File.WriteAllBytes(fullPath, compressedData.ToArray());
-           
-           
-           Debug.LogError($"Data size: {data.Count} bytes");
-            //Debug.LogError($"compressedData: {compressedData.Length} bytes");
-            Debug.LogError($"compressedData2: {compressedData2.Length} bytes");
-            
-            //SendData(data.ToArray());
-           SendData(compressedData2);
+            SendData(data.ToArray());
             int endSignal = 0;
             byte[] endSignalBytes = BitConverter.GetBytes(endSignal);
                       
-        
+            
             SendData(endSignalBytes);
            // ReceiveChunk(endSignalBytes);
            mesh.vertices = vertices;
@@ -330,31 +285,7 @@ public class UnityWebRTC : MonoBehaviour
         webSocket.Close();
         WebRTC.Dispose();
     }
-    // 데이터 압축 메서드
-    public byte[] CompressData(List<byte> data)
-    {
-        using (MemoryStream output = new MemoryStream())
-        {
-            using (GZipStream gzip = new GZipStream(output, CompressionMode.Compress))
-            {
-                gzip.Write(data.ToArray(), 0, data.Count);
-            }
-            return output.ToArray();
-        }
-    }
-    
-    public byte[] CompressData2(List<byte> data)
-    {
-        using (MemoryStream output = new MemoryStream())
-        {
-            using (LZ4Stream lz4Stream = new LZ4Stream(output, LZ4StreamMode.Compress))
-            {
-                lz4Stream.Write(data.ToArray(), 0, data.Count);
-            }
-            return output.ToArray();
-        }
-    }
-    
+
     private IEnumerator CreateOfferCoroutine()
     {
         var op = peerConnection.CreateOffer();
